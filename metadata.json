@@ -1,0 +1,6 @@
+{
+  "name": "SipFlow",
+  "description": "Personalized drink recommendations for your mood, weather, and moment.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

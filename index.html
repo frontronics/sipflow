@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SipFlow — Your mood. Your moment. Your sip.</title>
+    <meta name="description" content="Personalized drink recommendations for your mood, weather, and moment.">
+    <meta name="theme-color" content="#f43f5e">
+    
+    <!-- PWA Web App Manifest and Icons -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+
+    <!-- Google Fonts: Plus Jakarta Sans & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        sleek: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            850: '#141c2e',
+                            900: '#0f172a',
+                            950: '#090d16',
+                        },
+                        accent: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 25px -5px rgba(220, 38, 38, 0.35)',
+                        'glow-sm': '0 0 15px -3px rgba(220, 38, 38, 0.25)',
+                        'sleek': '0 10px 30px -10px rgba(0, 0, 0, 0.12)',
+                        'sleek-dark': '0 10px 30px -10px rgba(0, 0, 0, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.9; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+        .pulse-glow { animation: pulseGlow 3s infinite ease-in-out; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(24px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        .sleek-gradient-bg {
+            background: linear-gradient(135deg, #090d16 0%, #17090c 50%, #000000 100%);
+        }
+        .sleek-card-border {
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .dark .sleek-card-border {
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+    </style>
+</head>
+<body class="h-full bg-sleek-50 dark:bg-sleek-950 text-sleek-800 dark:text-sleek-100 font-sans antialiased selection:bg-accent-500/20 selection:text-accent-500 flex flex-col transition-colors duration-200">
+
+    <!-- SPLASH SCREEN -->
+    <div id="splash-screen" class="fixed inset-0 z-50 sleek-gradient-bg flex flex-col items-center justify-center text-white transition-opacity duration-500">
+        <div class="text-center p-6 pulse-glow">
+            <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-tr from-accent-600 to-rose-400 rounded-3xl flex items-center justify-center border border-white/20 shadow-glow">
+                <span class="material-symbols-outlined text-5xl text-white drop-shadow">local_cafe</span>
+            </div>
+            <h1 class="text-4xl font-extrabold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-sleek-100 to-rose-200">SipFlow</h1>
+            <p class="text-accent-300 font-medium text-base tracking-wide">Your mood. Your moment. Your sip.</p>
+        </div>
+        <div class="absolute bottom-10 left-0 right-0 text-center text-xs text-sleek-400 tracking-wider font-medium">
+            Sleek Beverage Matcher Engine
+        </div>
+    </div>
+
+    <!-- OFFLINE STATUS BANNER -->
+    <div id="offline-banner" class="hidden bg-red-600/90 dark:bg-red-700/90 backdrop-blur-md text-white text-xs font-semibold px-4 py-2 text-center transition-all flex items-center justify-center gap-2 z-40 border-b border-red-500/20">
+        <span class="material-symbols-outlined text-base">wifi_off</span>
+        <span>You're offline — SipFlow engine is fully functional locally!</span>
+    </div>
+
+    <div id="app-container" class="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto overflow-hidden min-h-screen">
+
+        <!-- DESKTOP SIDEBAR / NAVIGATION -->
+        <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-sleek-900 border-r border-sleek-200/80 dark:border-sleek-800/80 p-6 flex-shrink-0">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-accent-600 to-rose-500 flex items-center justify-center text-white shadow-glow-sm">
+                    <span class="material-symbols-outlined text-2xl">local_cafe</span>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight text-sleek-900 dark:text-white">SipFlow</h1>
+                    <p class="text-[11px] text-accent-500 font-semibold tracking-wider uppercase">Sleek AI Matcher</p>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Items -->
+            <nav class="space-y-1.5 flex-1">
+                <button onclick="switchTab('home')" id="dnav-home" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold text-accent-600 dark:text-accent-400 bg-accent-500/10 border border-accent-500/20 transition-all">
+                    <span class="material-symbols-outlined text-xl">home</span>
+                    Home
+                </button>
+                <button onclick="switchTab('explore')" id="dnav-explore" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sleek-600 dark:text-sleek-400 hover:bg-sleek-100 dark:hover:bg-sleek-800/60 transition-all">
+                    <span class="material-symbols-outlined text-xl">explore</span>
+                    Explore
+                </button>
+                <button onclick="switchTab('favorites')" id="dnav-favorites" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sleek-600 dark:text-sleek-400 hover:bg-sleek-100 dark:hover:bg-sleek-800/60 transition-all">
+                    <span class="material-symbols-outlined text-xl">favorite</span>
+                    Favorites
+                </button>
+                <button onclick="switchTab('profile')" id="dnav-profile" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sleek-600 dark:text-sleek-400 hover:bg-sleek-100 dark:hover:bg-sleek-800/60 transition-all">
+                    <span class="material-symbols-outlined text-xl">person</span>
+                    Profile
+                </button>
+            </nav>
+
+            <!-- Desktop Install Banner -->
+            <div id="desktop-pwa-banner" class="hidden p-4 rounded-2xl bg-gradient-to-br from-accent-500/10 to-rose-500/5 border border-accent-500/20 text-center">
+                <p class="text-xs font-semibold text-accent-600 dark:text-accent-400 mb-2">Install SipFlow App</p>
+                <button onclick="triggerPWAInstall()" class="w-full text-xs font-bold py-2.5 px-3 bg-gradient-to-r from-accent-600 to-rose-500 hover:from-accent-700 hover:to-rose-600 text-white rounded-xl shadow-glow-sm transition">
+                    Install App
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto pb-28 md:pb-8 pt-4 px-4 sm:px-8 max-w-4xl mx-auto w-full">
+
+            <!-- MOBILE HEADER -->
+            <header class="flex md:hidden items-center justify-between py-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent-600 to-rose-500 flex items-center justify-center text-white shadow-glow-sm">
+                        <span class="material-symbols-outlined text-xl">local_cafe</span>
+                    </div>
+                    <span class="font-extrabold text-xl tracking-tight text-sleek-900 dark:text-white">SipFlow</span>
+                </div>
+                <button id="mobile-install-btn" onclick="triggerPWAInstall()" class="hidden text-xs font-semibold px-3 py-1.5 rounded-xl bg-gradient-to-r from-accent-600 to-rose-500 text-white shadow-glow-sm flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">download</span>
+                    Install
+                </button>
+            </header>
+
+            <!-- TAB 1: HOME -->
+            <section id="tab-home" class="space-y-8 animate-fade-in">
+                <!-- HERO CARD -->
+                <div class="relative overflow-hidden rounded-3xl sleek-gradient-bg text-white p-6 sm:p-8 border border-white/10 dark:border-sleek-700/60 shadow-sleek-dark">
+                    <div class="absolute -right-12 -top-12 w-64 h-64 bg-accent-600/20 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="relative z-10 max-w-lg">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-rose-200 text-xs font-semibold tracking-wide mb-3 border border-white/10 backdrop-blur-md">
+                            <span class="material-symbols-outlined text-sm text-accent-400">auto_awesome</span>
+                            Personalized Drink AI
+                        </span>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2 leading-tight">
+                            What are you feeling today?
+                        </h2>
+                        <p class="text-sleek-300 text-sm sm:text-base mb-6 font-normal">
+                            Let SipFlow find the perfect drink for your moment, weather & energy level.
+                        </p>
+                        <button onclick="startRecommendationFlow()" class="inline-flex items-center gap-2.5 bg-gradient-to-r from-accent-500 to-rose-500 hover:from-accent-600 hover:to-rose-600 text-white font-bold px-6 py-3.5 rounded-2xl shadow-glow transition-all transform active:scale-95 text-base">
+                            <span class="material-symbols-outlined text-xl">bolt</span>
+                            Find My Sip
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QUICK MOOD SELECTION -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-sleek-900 dark:text-white">Quick Mood Selection</h3>
+                        </div>
+                        <span class="text-[11px] font-semibold text-sleek-400 flex items-center gap-1 bg-sleek-100 dark:bg-sleek-800/80 px-2.5 py-1 rounded-full">
+                            <span class="material-symbols-outlined text-sm">swipe</span>
+                            Swipe / Drag
+                        </span>
+                    </div>
+
+                    <!-- Horizontal Carousel Emoji Bar -->
+                    <div id="quick-mood-scroll" class="flex items-center gap-3 overflow-x-auto pb-3 pt-1 px-1 no-scrollbar scroll-smooth snap-x cursor-grab active:cursor-grabbing select-none">
+                        <button onclick="startRecommendationFlow('happy')" title="Happy" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">😊</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Happy</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('relaxed')" title="Relaxed" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">😌</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Relaxed</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('energetic')" title="Energetic" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">⚡</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Energetic</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('tired')" title="Tired" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">😴</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Tired</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('focused')" title="Focused" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">🧠</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Focused</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('low')" title="Low" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">😔</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Low</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('stressed')" title="Stressed" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">🔥</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Stressed</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('celebrating')" title="Celebrating" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">🎉</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Celebrate</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('cozy')" title="Cozy" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">☕</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Cozy</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('refreshing')" title="Refreshing" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">🍋</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Fresh</span>
+                        </button>
+                        <button onclick="startRecommendationFlow('adventurous')" title="Adventurous" class="snap-start flex-shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border hover:border-accent-500/60 hover:shadow-glow-sm hover:scale-105 active:scale-95 transition-all group">
+                            <span class="text-3xl group-hover:scale-110 transition-transform">🚀</span>
+                            <span class="text-[11px] font-bold text-sleek-700 dark:text-sleek-200 mt-1">Explore</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DAILY HYDRATION & SIP TRACKER -->
+                <div class="p-5 rounded-3xl bg-white dark:bg-sleek-900 sleek-card-border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-red-600 flex items-center justify-center text-white text-2xl shadow-glow-sm flex-shrink-0">
+                            🥤
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <h3 class="font-extrabold text-base text-sleek-900 dark:text-white">Daily Sip Tracker</h3>
+                                <span id="sip-count-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">0 / 4 Logged</span>
+                            </div>
+                            <p class="text-xs text-sleek-500 dark:text-sleek-400">Track your daily beverages & maintain optimal hydration balance.</p>
+                            <!-- Progress Bar -->
+                            <div class="w-48 bg-sleek-100 dark:bg-sleek-800 h-2 rounded-full mt-2 overflow-hidden">
+                                <div id="sip-tracker-progress" class="bg-emerald-500 h-full w-0 transition-all duration-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="startRecommendationFlow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-sleek-100 dark:bg-sleek-800 hover:bg-sleek-200 dark:hover:bg-sleek-700 text-sleek-800 dark:text-sleek-100 font-bold text-xs transition flex items-center justify-center gap-1.5 flex-shrink-0">
+                        <span class="material-symbols-outlined text-base">add</span>
+                        Log New Sip
+                    </button>
+                </div>
+
+                <!-- TODAY'S SIP WIDGET -->
+                <div class="space-y-3">
+                    <h3 class="text-lg font-bold text-sleek-900 dark:text-white">Today's Sip</h3>
+                    <div id="todays-sip-container"></div>
+                </div>
+
+                <!-- RECENT SIPS -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-sleek-900 dark:text-white">Recent Recommendations</h3>
+                        <button onclick="switchTab('explore')" class="text-xs font-semibold text-accent-500 hover:underline">View All</button>
+                    </div>
+                    <div id="recent-sips-container" class="flex gap-4 overflow-x-auto pb-2 no-scrollbar"></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: EXPLORE -->
+            <section id="tab-explore" class="hidden space-y-6 animate-fade-in">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-sleek-900 dark:text-white mb-1">Explore Beverages</h2>
+                        <p class="text-xs text-sleek-500 dark:text-sleek-400">Browse through our complete collection of handcrafted drink profiles.</p>
+                    </div>
+                    <button onclick="openCustomDrinkModal()" class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-xs shadow-glow-sm hover:scale-105 active:scale-95 transition flex items-center gap-1.5 flex-shrink-0">
+                        <span class="material-symbols-outlined text-base">add_circle</span>
+                        + Custom Sip
+                    </button>
+                </div>
+
+                <!-- SEARCH BAR & TASTE FILTER TOGGLE -->
+                <div class="space-y-3">
+                    <div class="relative">
+                        <span class="material-symbols-outlined text-xl absolute left-4 top-1/2 -translate-y-1/2 text-sleek-400">search</span>
+                        <input type="text" id="search-input" oninput="filterExploreDrinks()" placeholder="Search drinks by name, mood, or tag..." class="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50 text-sleek-800 dark:text-sleek-100 shadow-sm transition">
+                    </div>
+
+                    <!-- TASTE PROFILE MATRIX SLIDERS -->
+                    <div class="p-4 rounded-2xl bg-white dark:bg-sleek-900 sleek-card-border shadow-sm space-y-3">
+                        <div class="flex items-center justify-between text-xs font-bold text-sleek-800 dark:text-sleek-100">
+                            <span class="flex items-center gap-1 text-accent-500">
+                                <span class="material-symbols-outlined text-base">tune</span>
+                                Flavor & Caffeine Filters
+                            </span>
+                            <button onclick="resetTasteFilters()" class="text-sleek-400 hover:text-accent-500 transition font-medium">Reset</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <div class="flex items-center justify-between font-semibold mb-1">
+                                    <span class="text-sleek-600 dark:text-sleek-300">Max Caffeine Level</span>
+                                    <span id="caffeine-filter-val" class="text-accent-500 font-bold">100% (Any)</span>
+                                </div>
+                                <input type="range" id="caffeine-slider" min="0" max="100" value="100" oninput="updateTasteFilters()" class="w-full accent-accent-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between font-semibold mb-1">
+                                    <span class="text-sleek-600 dark:text-sleek-300">Max Sweetness Level</span>
+                                    <span id="sweetness-filter-val" class="text-emerald-600 dark:text-emerald-400 font-bold">100% (Any)</span>
+                                </div>
+                                <input type="range" id="sweetness-slider" min="0" max="100" value="100" oninput="updateTasteFilters()" class="w-full accent-emerald-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INTERACTIVE DISCOVERY TOOLS (SPIN WHEEL & NEARBY CAFE FINDER) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- 🎲 "SURPRISE ME" SPIN WHEEL CARD -->
+                    <div class="p-5 rounded-3xl bg-white dark:bg-sleek-900 sleek-card-border shadow-sm flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 font-extrabold text-base flex items-center justify-center">🎲</span>
+                                <div>
+                                    <h3 class="font-extrabold text-base text-sleek-900 dark:text-white">Surprise Me Wheel</h3>
+                                    <p class="text-[11px] text-sleek-500 dark:text-sleek-400">Can't decide? Let the wheel pick!</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Quick Pick</span>
+                        </div>
+
+                        <!-- CANVAS SPIN WHEEL VISUAL -->
+                        <div class="relative flex flex-col items-center justify-center my-2">
+                            <div class="relative w-44 h-44 flex items-center justify-center">
+                                <!-- Pointer Marker -->
+                                <div class="absolute -top-2 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[18px] border-t-red-600 drop-shadow-md"></div>
+                                <canvas id="wheel-canvas" width="170" height="170" class="rounded-full shadow-lg border-4 border-white dark:border-sleek-800 transition-transform duration-[2500ms] cubic-bezier(0.15, 0.85, 0.35, 1.0)"></canvas>
+                                <!-- Center Button Pin -->
+                                <div class="absolute w-10 h-10 rounded-full bg-white dark:bg-sleek-900 shadow-md border border-sleek-200 dark:border-sleek-700 flex items-center justify-center text-lg z-10 pointer-events-none">
+                                    🍹
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="spin-wheel-btn" onclick="spinBeverageWheel()" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-extrabold text-xs shadow-glow-sm transition flex items-center justify-center gap-2 active:scale-95">
+                            <span class="material-symbols-outlined text-lg">casino</span>
+                            SPIN THE WHEEL 🎲
+                        </button>
+                    </div>
+
+                    <!-- 📍 NEARBY CAFE & BOBA FINDER CARD -->
+                    <div class="p-5 rounded-3xl bg-white dark:bg-sleek-900 sleek-card-border shadow-sm flex flex-col justify-between space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-base flex items-center justify-center">📍</span>
+                                <div>
+                                    <h3 class="font-extrabold text-base text-sleek-900 dark:text-white">Nearby Cafe & Boba Finder</h3>
+                                    <p class="text-[11px] text-sleek-500 dark:text-sleek-400">Discover local spots serving your sip</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live Maps</span>
+                        </div>
+
+                        <div class="space-y-3 text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <span class="material-symbols-outlined text-base absolute left-3 top-1/2 -translate-y-1/2 text-sleek-400">my_location</span>
+                                    <input type="text" id="cafe-location-input" placeholder="Enter City, Zip or 'Current Location'" class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                                <button onclick="useCurrentLocationAndSearch()" class="p-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold transition flex items-center justify-center" title="Locate Me">
+                                    <span class="material-symbols-outlined text-lg">gps_fixed</span>
+                                </button>
+                            </div>
+
+                            <!-- CATEGORIES GRID WITH DYNAMIC & CUSTOM BUTTONS -->
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between text-[11px] font-bold text-sleek-600 dark:text-sleek-300">
+                                    <span>Categories</span>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="resetMapCategoriesToDefault()" class="text-[10px] text-sleek-400 hover:text-emerald-500 font-medium">Reset Default</button>
+                                        <button onclick="openCustomMapCategoryModal()" class="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5">
+                                            <span class="material-symbols-outlined text-xs">add_circle</span>
+                                            + Custom
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="nearby-categories-grid" class="grid grid-cols-2 gap-2">
+                                    <!-- Dynamically populated via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="useCurrentLocationAndSearch()" class="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-glow-sm transition flex items-center justify-center gap-2 active:scale-95">
+                            <span class="material-symbols-outlined text-lg">near_me</span>
+                            Find Cafes Near My Location 📍
+                        </button>
+
+                        <!-- EMBEDDED MAP VIEW & REAL PLACES RESULTS LIST -->
+                        <div id="nearby-results-section" class="mt-2 space-y-3 hidden">
+                            <!-- Status bar -->
+                            <div class="flex items-center justify-between text-xs font-bold text-sleek-700 dark:text-sleek-200">
+                                <span id="nearby-status-title" class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                    <span class="material-symbols-outlined text-base">explore</span>
+                                    Nearby Spots
+                                </span>
+                                <span id="nearby-status-count" class="text-[11px] font-semibold text-sleek-400">Searching...</span>
+                            </div>
+
+                            <!-- Embedded Interactive Map -->
+                            <div class="w-full h-44 rounded-2xl overflow-hidden border border-emerald-500/30 shadow-inner relative bg-sleek-100 dark:bg-sleek-950">
+                                <iframe id="cafe-map-iframe" class="w-full h-full border-0" loading="lazy" allowfullscreen src="about:blank"></iframe>
+                            </div>
+
+                            <!-- Nearby Places Grid/List -->
+                            <div id="cafe-places-list" class="space-y-2 max-h-64 overflow-y-auto pr-1 no-scrollbar">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY PILLS -->
+                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold" id="category-pills">
+                    <button onclick="selectExploreCategory('all')" class="cat-pill px-4 py-2.5 rounded-xl bg-accent-500 text-white font-bold transition flex-shrink-0 shadow-glow-sm">All</button>
+                    <button onclick="selectExploreCategory('coffee')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Coffee ☕</button>
+                    <button onclick="selectExploreCategory('tea')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Tea 🍵</button>
+                    <button onclick="selectExploreCategory('juice')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Juice 🍊</button>
+                    <button onclick="selectExploreCategory('smoothies')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Smoothies 🥤</button>
+                    <button onclick="selectExploreCategory('coolers')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Coolers 🧊</button>
+                    <button onclick="selectExploreCategory('healthy')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Healthy 🌿</button>
+                    <button onclick="selectExploreCategory('milk-based')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Milk-based 🥛</button>
+                    <button onclick="selectExploreCategory('traditional')" class="cat-pill px-4 py-2.5 rounded-xl bg-white dark:bg-sleek-900 sleek-card-border text-sleek-600 dark:text-sleek-300 hover:border-accent-500/50 transition flex-shrink-0">Traditional 🫖</button>
+                </div>
+
+                <!-- DRINKS GRID -->
+                <div id="explore-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+            </section>
+
+            <!-- TAB 3: FAVORITES -->
+            <section id="tab-favorites" class="hidden space-y-6 animate-fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-extrabold text-sleek-900 dark:text-white mb-1">Your Favorite Sips</h2>
+                        <p class="text-xs text-sleek-500 dark:text-sleek-400">Quickly access the beverages you love most.</p>
+                    </div>
+                    <button id="clear-favs-btn" onclick="clearAllFavorites()" class="hidden text-xs font-semibold text-rose-500 hover:underline">
+                        Clear All
+                    </button>
+                </div>
+
+                <div id="favorites-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+            </section>
+
+            <!-- TAB 4: PROFILE / SETTINGS -->
+            <section id="tab-profile" class="hidden space-y-6 animate-fade-in">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-sleek-900 dark:text-white mb-1">Profile & Settings</h2>
+                    <p class="text-xs text-sleek-500 dark:text-sleek-400">Customize your preferences and app configuration.</p>
+                </div>
+
+                <!-- USER PROFILE CARD -->
+                <div class="bg-white dark:bg-sleek-900 p-6 rounded-3xl sleek-card-border shadow-sm space-y-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-accent-600 to-rose-400 text-white font-extrabold text-2xl flex items-center justify-center shadow-glow-sm" id="avatar-initials">
+                            S
+                        </div>
+                        <div>
+                            <input type="text" id="user-name-input" onchange="saveUserSettings()" placeholder="Enter Your Name" class="font-bold text-lg text-sleek-900 dark:text-white bg-transparent border-b border-sleek-200 dark:border-sleek-700 focus:border-accent-500 focus:outline-none py-0.5">
+                            <p class="text-xs text-accent-500 font-semibold mt-1">SipFlow Enthusiast</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-sleek-500 dark:text-sleek-400 mb-1.5">Preferred Beverage Style</label>
+                        <select id="pref-drink-type" onchange="saveUserSettings()" class="w-full py-2.5 px-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/50 text-sleek-800 dark:text-sleek-100">
+                            <option value="anything">Anything goes</option>
+                            <option value="coffee">Coffee lover ☕</option>
+                            <option value="tea">Tea enthusiast 🍵</option>
+                            <option value="healthy">Healthy & Fresh 🍊</option>
+                            <option value="sweet">Sweet & Indulgent 🍫</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- BEVERAGE & HYDRATION ANALYTICS SUMMARY -->
+                <div class="bg-white dark:bg-sleek-900 p-6 rounded-3xl sleek-card-border shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-sleek-400">Activity & Sip Stats</h3>
+                        <span class="text-xs font-bold text-accent-500">Live Insights</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="p-3.5 rounded-2xl bg-sleek-50 dark:bg-sleek-950 border border-sleek-100 dark:border-sleek-800">
+                            <span id="stat-total-sips" class="block font-black text-2xl text-red-600 dark:text-red-500">0</span>
+                            <span class="text-[10px] font-semibold text-sleek-400 uppercase">Sips Logged</span>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-sleek-50 dark:bg-sleek-950 border border-sleek-100 dark:border-sleek-800">
+                            <span id="stat-fav-count" class="block font-black text-2xl text-emerald-600 dark:text-emerald-400">0</span>
+                            <span class="text-[10px] font-semibold text-sleek-400 uppercase">Saved Favorites</span>
+                        </div>
+                        <div class="p-3.5 rounded-2xl bg-sleek-50 dark:bg-sleek-950 border border-sleek-100 dark:border-sleek-800">
+                            <span id="stat-history-count" class="block font-black text-2xl text-emerald-500">0</span>
+                            <span class="text-[10px] font-semibold text-sleek-400 uppercase">Matches Found</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- APP CONFIGURATION -->
+                <div class="bg-white dark:bg-sleek-900 p-6 rounded-3xl sleek-card-border shadow-sm space-y-5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-sleek-400">Preferences</h3>
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="block text-sm font-semibold text-sleek-800 dark:text-sleek-100">Dark Mode</span>
+                            <span class="text-xs text-sleek-400">Toggle dark visual mode</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-sleek-200 peer-focus:outline-none rounded-full peer dark:bg-sleek-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sleek-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-sleek-100 dark:border-sleek-800">
+                        <div>
+                            <span class="block text-sm font-semibold text-sleek-800 dark:text-sleek-100">Drink Reminders</span>
+                            <span class="text-xs text-sleek-400">Hydration and sip suggestions</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="notifications-toggle" onchange="saveUserSettings()" class="sr-only peer">
+                            <div class="w-11 h-6 bg-sleek-200 peer-focus:outline-none rounded-full peer dark:bg-sleek-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sleek-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PWA AND DATA STORAGE -->
+                <div class="bg-white dark:bg-sleek-900 p-6 rounded-3xl sleek-card-border shadow-sm space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-sleek-400">App Management</h3>
+
+                    <button id="pwa-install-profile-btn" onclick="triggerPWAInstall()" class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-accent-500/10 text-accent-600 dark:text-accent-400 font-semibold text-sm hover:bg-accent-500/20 transition border border-accent-500/20">
+                        <span class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">download</span>
+                            Install SipFlow PWA
+                        </span>
+                        <span class="text-xs bg-accent-500 text-white px-2.5 py-1 rounded-lg font-bold">Ready</span>
+                    </button>
+
+                    <button onclick="clearHistoryData()" class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-sleek-50 dark:bg-sleek-950 text-sleek-700 dark:text-sleek-300 font-medium text-sm hover:bg-sleek-100 dark:hover:bg-sleek-800 transition border border-sleek-200/60 dark:border-sleek-800/60">
+                        <span>Clear Recommendation History</span>
+                        <span class="material-symbols-outlined text-lg text-sleek-400">delete</span>
+                    </button>
+
+                    <button onclick="clearAllFavorites()" class="w-full flex items-center justify-between p-3.5 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-sm hover:bg-rose-500/20 transition border border-rose-500/20">
+                        <span>Clear All Saved Favorites</span>
+                        <span class="material-symbols-outlined text-lg text-rose-500">delete_forever</span>
+                    </button>
+                </div>
+
+                <div class="text-center text-xs text-sleek-400 pt-2 font-medium">
+                    SipFlow v1.0.0 • Offline-Ready PWA • Zero External APIs Needed
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-sleek-200/80 dark:border-sleek-800/80 py-2.5 px-6 flex items-center justify-around z-30">
+        <button onclick="switchTab('home')" id="mnav-home" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-accent-500 font-bold">
+            <span class="material-symbols-outlined text-2xl">home</span>
+            <span class="text-[10px] font-semibold">Home</span>
+        </button>
+        <button onclick="switchTab('explore')" id="mnav-explore" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-sleek-400 hover:text-sleek-600 dark:hover:text-sleek-200">
+            <span class="material-symbols-outlined text-2xl">explore</span>
+            <span class="text-[10px] font-semibold">Explore</span>
+        </button>
+        <button onclick="switchTab('favorites')" id="mnav-favorites" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-sleek-400 hover:text-sleek-600 dark:hover:text-sleek-200">
+            <span class="material-symbols-outlined text-2xl">favorite</span>
+            <span class="text-[10px] font-semibold">Favorites</span>
+        </button>
+        <button onclick="switchTab('profile')" id="mnav-profile" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-sleek-400 hover:text-sleek-600 dark:hover:text-sleek-200">
+            <span class="material-symbols-outlined text-2xl">person</span>
+            <span class="text-[10px] font-semibold">Profile</span>
+        </button>
+    </nav>
+
+    <!-- RECOMMENDATION MULTI-STEP WIZARD MODAL -->
+    <div id="wizard-modal" class="fixed inset-0 bg-sleek-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-sleek-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-sleek-200/80 dark:border-sleek-700/80 animate-slide-up flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-sleek-100 dark:border-sleek-800 flex items-center justify-between">
+                <div>
+                    <span id="wizard-step-label" class="text-xs font-extrabold uppercase text-accent-500 tracking-wider">Step 1 of 4</span>
+                    <h3 id="wizard-title" class="text-lg font-bold text-sleek-900 dark:text-white">How are you feeling?</h3>
+                </div>
+                <button onclick="closeWizard()" class="p-2 rounded-full hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-400 hover:text-sleek-600 dark:hover:text-sleek-200 transition">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <div class="w-full bg-sleek-100 dark:bg-sleek-800 h-1.5">
+                <div id="wizard-progress" class="bg-gradient-to-r from-accent-500 to-rose-400 h-1.5 transition-all duration-300" style="width: 25%;"></div>
+            </div>
+
+            <div id="wizard-body" class="p-6 overflow-y-auto space-y-4 flex-1"></div>
+
+            <div class="p-4 border-t border-sleek-100 dark:border-sleek-800 flex items-center justify-between bg-sleek-50/80 dark:bg-sleek-950/50">
+                <button id="wizard-prev-btn" onclick="wizardPrevStep()" class="px-4 py-2.5 rounded-xl border border-sleek-200 dark:border-sleek-700 text-xs font-semibold text-sleek-600 dark:text-sleek-300 disabled:opacity-30 disabled:pointer-events-none hover:bg-sleek-100 dark:hover:bg-sleek-800 transition">
+                    Back
+                </button>
+                <button id="wizard-next-btn" onclick="wizardNextStep()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-500 to-rose-500 hover:from-accent-600 hover:to-rose-600 text-white text-xs font-bold shadow-glow-sm transition">
+                    Next Step
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRINK RESULT MODAL (UNIFIED 1-SECTION ELEGANT CARD) -->
+    <div id="result-modal" class="fixed inset-0 bg-sleek-950/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 sm:p-6">
+        <div class="bg-white dark:bg-sleek-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-sleek-200/90 dark:border-sleek-800 animate-slide-up flex flex-col relative text-sleek-800 dark:text-sleek-100">
+            
+            <!-- SINGLE UNIFIED CARD CONTENT -->
+            <div class="p-6 space-y-4 max-h-[90vh] overflow-y-auto no-scrollbar">
+                
+                <!-- TOP UTILITY BAR -->
+                <div class="flex items-center justify-between pb-1">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                        YOUR SIP MATCH
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="shareCurrentSip()" class="w-8 h-8 rounded-full bg-sleek-100 dark:bg-sleek-800 text-sleek-600 dark:text-sleek-300 hover:bg-emerald-500 hover:text-white transition flex items-center justify-center" title="Share Sip">
+                            <span class="material-symbols-outlined text-base">share</span>
+                        </button>
+                        <button onclick="closeResultModal()" class="w-8 h-8 rounded-full bg-sleek-100 dark:bg-sleek-800 text-sleek-600 dark:text-sleek-300 hover:bg-rose-500 hover:text-white transition flex items-center justify-center">
+                            <span class="material-symbols-outlined text-base">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DRINK HERO HEADER (CENTERPIECE) -->
+                <div class="text-center space-y-2 py-1">
+                    <div id="result-icon-container" class="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 rounded-3xl flex items-center justify-center text-4xl shadow-inner border border-emerald-500/20">
+                        ☕
+                    </div>
+                    <h2 id="result-drink-name" class="text-2xl font-extrabold text-sleek-900 dark:text-white tracking-tight">Cold Coffee</h2>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="result-match-percentage" class="bg-emerald-500 text-white font-black text-xs px-3 py-0.5 rounded-full shadow-xs">96% Match</span>
+                        <span id="result-temp-badge" class="bg-sleek-100 dark:bg-sleek-800 text-sleek-600 dark:text-sleek-300 text-xs font-bold px-2.5 py-0.5 rounded-full">🧊 Cold</span>
+                    </div>
+                </div>
+
+                <!-- DESCRIPTION & RATIONALE -->
+                <div class="space-y-2 text-xs">
+                    <p id="result-rationale" class="text-sleek-600 dark:text-sleek-300 leading-relaxed font-medium bg-sleek-50 dark:bg-sleek-950 p-3.5 rounded-2xl border border-sleek-100 dark:border-sleek-800/80"></p>
+                    <p id="result-description" class="text-sleek-500 dark:text-sleek-400 leading-normal text-xs px-1"></p>
+                </div>
+
+                <!-- INLINE METRICS (CAFFEINE & SWEETNESS) -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <div class="p-3 bg-sleek-50 dark:bg-sleek-950 rounded-2xl border border-sleek-100 dark:border-sleek-800/80">
+                        <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                            <span class="text-sleek-500">Caffeine</span>
+                            <span id="result-caffeine-level" class="text-emerald-600 dark:text-emerald-400 font-extrabold">Medium</span>
+                        </div>
+                        <div class="w-full bg-sleek-200 dark:bg-sleek-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="result-caffeine-bar" class="bg-emerald-500 h-full w-2/3 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-sleek-50 dark:bg-sleek-950 rounded-2xl border border-sleek-100 dark:border-sleek-800/80">
+                        <div class="flex items-center justify-between text-[11px] font-bold mb-1">
+                            <span class="text-sleek-500">Sweetness</span>
+                            <span id="result-sweetness-level" class="text-amber-500 font-extrabold">Balanced</span>
+                        </div>
+                        <div class="w-full bg-sleek-200 dark:bg-sleek-800 h-1.5 rounded-full overflow-hidden">
+                            <div id="result-sweetness-bar" class="bg-amber-500 h-full w-1/2 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEARBY SPOT CARD (INTEGRATED) -->
+                <div class="p-3.5 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                    <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">storefront</span>
+                            Nearby Serving Spot
+                        </span>
+                        <span class="text-[10px] text-sleek-400 font-normal">Live GMaps</span>
+                    </div>
+
+                    <div id="result-nearby-venue-card" class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <div id="result-venue-icon" class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-base flex-shrink-0">
+                                🧋
+                            </div>
+                            <div>
+                                <h4 id="result-venue-name" class="font-bold text-xs text-sleek-900 dark:text-white leading-tight">Gong Cha Boba & Milk Tea</h4>
+                                <p id="result-venue-addr" class="text-[10px] text-sleek-500 dark:text-sleek-400">Near Main Rd • 0.3 km away • ★ 4.8</p>
+                            </div>
+                        </div>
+                        <a id="result-venue-dir-btn" href="#" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center gap-1 transition flex-shrink-0 shadow-xs" title="Get Directions">
+                            <span class="material-symbols-outlined text-sm">directions</span>
+                            <span>Route</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- CLEAR & INTUITIVE BOTTOM ACTIONS -->
+                <div class="pt-2 space-y-2">
+                    <!-- PRIMARY ACTION -->
+                    <button onclick="logCurrentDrinkSip()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition">
+                        <span class="material-symbols-outlined text-lg">local_drink</span>
+                        <span>Log to Hydration Tracker 🥤</span>
+                    </button>
+
+                    <!-- SECONDARY ACTIONS -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="result-fav-btn" onclick="toggleResultFavorite()" class="py-2 px-2.5 rounded-xl border border-sleek-200 dark:border-sleek-800 hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-700 dark:text-sleek-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <span id="result-fav-icon" class="material-symbols-outlined text-base">favorite</span>
+                            <span id="result-fav-text">Save</span>
+                        </button>
+                        <button onclick="openRecipeForCurrentDrink()" class="py-2 px-2.5 rounded-xl border border-sleek-200 dark:border-sleek-800 hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-700 dark:text-sleek-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <span class="material-symbols-outlined text-base">menu_book</span>
+                            <span>Recipe</span>
+                        </button>
+                        <button onclick="getAnotherRecommendation()" class="py-2 px-2.5 rounded-xl border border-sleek-200 dark:border-sleek-800 hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-700 dark:text-sleek-200 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+                            <span class="material-symbols-outlined text-base">shuffle</span>
+                            <span>Shuffle</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- RECIPE & BREW TIMER MODAL -->
+    <div id="recipe-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md hidden">
+        <div class="bg-white dark:bg-sleek-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-sleek-200/80 dark:border-sleek-700/80 animate-slide-up flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-sleek-100 dark:border-sleek-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="recipe-icon" class="w-10 h-10 rounded-2xl bg-accent-500/10 dark:bg-accent-500/20 flex items-center justify-center text-2xl">
+                        🫖
+                    </div>
+                    <div>
+                        <h3 id="recipe-drink-name" class="font-extrabold text-lg text-sleek-900 dark:text-white">Drink Recipe</h3>
+                        <p id="recipe-meta" class="text-xs text-sleek-400">Prep time: 5 mins</p>
+                    </div>
+                </div>
+                <button onclick="closeRecipeModal()" class="p-2 rounded-full hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-400 transition">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 text-sm">
+                <!-- BREW / STEEP TIMER WIDGET -->
+                <div class="p-4 rounded-2xl bg-gradient-to-br from-accent-500/10 to-rose-500/10 border border-accent-500/20">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase text-accent-600 dark:text-accent-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">timer</span>
+                            Brew & Steep Timer
+                        </span>
+                        <span id="timer-display" class="font-mono text-xl font-black text-sleek-900 dark:text-white">03:00</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="timer-start-btn" onclick="toggleBrewTimer()" class="flex-1 py-2 px-3 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-bold text-xs transition flex items-center justify-center gap-1">
+                            <span id="timer-btn-icon" class="material-symbols-outlined text-base">play_arrow</span>
+                            <span id="timer-btn-text">Start Timer</span>
+                        </button>
+                        <button onclick="resetBrewTimer()" class="py-2 px-3 rounded-xl bg-sleek-200 dark:bg-sleek-800 hover:bg-sleek-300 dark:hover:bg-sleek-700 text-sleek-700 dark:text-sleek-200 font-bold text-xs transition">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- INGREDIENTS LIST -->
+                <div>
+                    <h4 class="font-bold text-xs uppercase text-sleek-400 tracking-wider mb-2.5">Ingredients Required</h4>
+                    <ul id="recipe-ingredients-list" class="space-y-2"></ul>
+                </div>
+
+                <!-- PREPARATION STEPS -->
+                <div>
+                    <h4 class="font-bold text-xs uppercase text-sleek-400 tracking-wider mb-2.5">Step-by-Step Directions</h4>
+                    <ol id="recipe-steps-list" class="space-y-3"></ol>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-sleek-100 dark:border-sleek-800 bg-sleek-50/80 dark:bg-sleek-950/50 flex justify-end">
+                <button onclick="closeRecipeModal()" class="px-5 py-2.5 rounded-xl bg-sleek-900 dark:bg-white text-white dark:text-sleek-900 font-bold text-xs">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM DRINK BUILDER MODAL -->
+    <div id="custom-drink-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md hidden">
+        <div class="bg-white dark:bg-sleek-900 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-sleek-200/80 dark:border-sleek-700/80 animate-slide-up flex flex-col max-h-[92vh]">
+            <div class="p-5 border-b border-sleek-100 dark:border-sleek-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-accent-500/10 text-accent-500 flex items-center justify-center text-lg">
+                        ✨
+                    </div>
+                    <h3 class="font-extrabold text-lg text-sleek-900 dark:text-white">Add Custom Beverage</h3>
+                </div>
+                <button onclick="closeCustomDrinkModal()" class="p-2 rounded-full hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-400 transition">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveCustomDrink(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Drink Name</label>
+                    <input type="text" id="custom-name" required placeholder="e.g. Grandma's Cinnamon Tea" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Category</label>
+                        <select id="custom-category" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                            <option value="tea">Tea 🍵</option>
+                            <option value="coffee">Coffee ☕</option>
+                            <option value="juice">Juice 🍊</option>
+                            <option value="smoothies">Smoothie 🥤</option>
+                            <option value="coolers">Cooler 🧊</option>
+                            <option value="healthy">Healthy 🌿</option>
+                            <option value="milk-based">Milk-based 🥛</option>
+                            <option value="traditional">Traditional 🫖</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Emoji Icon</label>
+                        <input type="text" id="custom-icon" maxlength="2" value="☕" class="w-full p-3 text-center text-lg rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Temperature</label>
+                        <select id="custom-temp" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                            <option value="hot">Hot ☕</option>
+                            <option value="cold">Cold 🧊</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Caffeine Level</label>
+                        <select id="custom-caffeine" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                            <option value="None">None</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Description</label>
+                    <textarea id="custom-desc" rows="2" placeholder="Briefly describe taste, texture, and secret ingredients..." class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Ingredients (comma separated)</label>
+                    <input type="text" id="custom-ingredients" placeholder="1 cup Milk, 1 tbsp Cocoa, 1 pinch Cinnamon" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-accent-500">
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeCustomDrinkModal()" class="px-4 py-2.5 rounded-xl border border-sleek-200 dark:border-sleek-700 font-bold text-sleek-600 dark:text-sleek-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-600 to-rose-500 text-white font-bold shadow-glow-sm">
+                        Save Custom Sip
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CUSTOM MAP CATEGORY BUILDER MODAL -->
+    <div id="custom-map-cat-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md hidden">
+        <div class="bg-white dark:bg-sleek-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-sleek-200/80 dark:border-sleek-700/80 animate-slide-up flex flex-col">
+            <div class="p-5 border-b border-sleek-100 dark:border-sleek-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-lg">
+                        📍
+                    </div>
+                    <h3 class="font-extrabold text-lg text-sleek-900 dark:text-white">Add Custom Spot Category</h3>
+                </div>
+                <button onclick="closeCustomMapCategoryModal()" class="p-2 rounded-full hover:bg-sleek-100 dark:hover:bg-sleek-800 text-sleek-400 transition">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <form onsubmit="handleSaveCustomMapCategory(event)" class="p-6 space-y-4 text-xs">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-1">
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Emoji Icon</label>
+                        <input type="text" id="map-cat-icon" maxlength="2" value="🍵" required class="w-full p-3 text-center text-lg rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Display Label</label>
+                        <input type="text" id="map-cat-label" required placeholder="e.g. Matcha Lounge" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-sleek-700 dark:text-sleek-200 mb-1">Map Search Keyword / Query</label>
+                    <input type="text" id="map-cat-query" required placeholder="e.g. matcha tea lounge or artisanal ice cream" class="w-full p-3 rounded-xl bg-sleek-50 dark:bg-sleek-950 sleek-card-border text-sleek-800 dark:text-sleek-100 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <p class="text-[10px] text-sleek-400 mt-1">This search term will be used to locate live venues on Google Maps.</p>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeCustomMapCategoryModal()" class="px-4 py-2.5 rounded-xl border border-sleek-200 dark:border-sleek-700 font-bold text-sleek-600 dark:text-sleek-300">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-glow-sm">
+                        Save Category 📍
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST MESSAGES -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toast-content" class="bg-sleek-900 text-white dark:bg-white dark:text-sleek-900 px-4 py-3 rounded-2xl shadow-xl border border-white/10 dark:border-sleek-200 flex items-center gap-2.5 text-xs font-bold">
+            <span class="material-symbols-outlined text-base text-accent-400 dark:text-accent-600">check_circle</span>
+            <span id="toast-message">Action successful</span>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Engine -->
+    <script src="./js/app.js"></script>
+</body>
+</html>
+
